@@ -176,20 +176,23 @@ export default function AchievementsPage() {
         </div>
 
         {/* 이모지 선택 */}
-        <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3 scrollbar-none">
-          {EMOJIS.map((e) => (
-            <button
-              key={e}
-              onClick={() => setSelectedEmoji(e)}
-              className={`text-xl rounded-xl p-2.5 transition flex-shrink-0 ${
-                selectedEmoji === e
-                  ? 'bg-purple-100 scale-105 shadow-xs ring-2 ring-purple-300'
-                  : 'bg-white hover:bg-gray-50 border border-gray-100'
-              }`}
-            >
-              {e}
-            </button>
-          ))}
+        <div className="w-full mb-4">
+          <div className="flex items-center justify-between gap-1.5 overflow-x-auto p-2 bg-white/80 rounded-2xl border border-purple-100 shadow-2xs [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {EMOJIS.map((e) => (
+              <button
+                key={e}
+                onClick={() => setSelectedEmoji(e)}
+                type="button"
+                className={`text-xl rounded-xl p-2 sm:p-2.5 transition-all flex-shrink-0 flex items-center justify-center ${
+                  selectedEmoji === e
+                    ? 'bg-purple-100 scale-105 shadow-xs ring-2 ring-purple-400'
+                    : 'bg-white hover:bg-gray-50 border border-gray-200/60 active:scale-95'
+                }`}
+              >
+                {e}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* 입력 카드 */}
