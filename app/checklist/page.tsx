@@ -288,18 +288,46 @@ export default function ChecklistPage() {
                 </div>
               </div>
 
-              {/* 전체 300% 기준 프로그레스 바 */}
-              <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden p-0.5 border border-gray-200/60">
-                <div
-                  className="bg-gradient-to-r from-indigo-500 via-purple-500 to-rose-500 h-full rounded-full transition-all duration-500"
-                  style={{ width: `${Math.min((totalPercent / 300) * 100, 100)}%` }}
-                />
-              </div>
-              <div className="flex justify-between items-center text-[11px] text-gray-400 mt-2 font-medium">
-                <span>0%</span>
-                <span>1회독 (100%)</span>
-                <span>2회독 (200%)</span>
-                <span>3회독 완벽 정복 (300%)</span>
+              {/* 전체 1/2/3회독 3단 분리 프로그레스 바 */}
+              <div className="grid grid-cols-3 gap-2.5 w-full mt-2">
+                <div>
+                  <div className="flex justify-between text-[11px] font-bold text-indigo-600 mb-1">
+                    <span>1회독 달성</span>
+                    <span className="tabular-nums">{Math.round((totalR1 / TOTAL_CHECKLIST_ITEMS) * 100)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                    <div
+                      className="bg-indigo-500 h-full rounded-full transition-all duration-500"
+                      style={{ width: `${(totalR1 / TOTAL_CHECKLIST_ITEMS) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-[11px] font-bold text-purple-600 mb-1">
+                    <span>2회독 달성</span>
+                    <span className="tabular-nums">{Math.round((totalR2 / TOTAL_CHECKLIST_ITEMS) * 100)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                    <div
+                      className="bg-purple-500 h-full rounded-full transition-all duration-500"
+                      style={{ width: `${(totalR2 / TOTAL_CHECKLIST_ITEMS) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-[11px] font-bold text-rose-600 mb-1">
+                    <span>3회독 달성</span>
+                    <span className="tabular-nums">{Math.round((totalR3 / TOTAL_CHECKLIST_ITEMS) * 100)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                    <div
+                      className="bg-rose-500 h-full rounded-full transition-all duration-500"
+                      style={{ width: `${(totalR3 / TOTAL_CHECKLIST_ITEMS) * 100}%` }}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -344,16 +372,39 @@ export default function ChecklistPage() {
                       </p>
                     </div>
 
-                    {/* 과목 내 1/2/3회독 미니 게이지 바 */}
+                    {/* 과목 내 1/2/3회독 분리 프로그레스 바 3개 */}
                     <div className="mt-4 pt-3 border-t border-gray-50">
-                      <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
-                        <div
-                          className="bg-gradient-to-r from-indigo-500 to-purple-500 h-1.5 rounded-full transition-all duration-300"
-                          style={{ width: `${Math.min((stats.percent / 300) * 100, 100)}%` }}
-                        />
+                      {/* 1, 2, 3회독 3단 분리 게이지 바 */}
+                      <div className="grid grid-cols-3 gap-1.5 w-full">
+                        {/* 1회독 바 */}
+                        <div className="bg-gray-100 rounded-full h-2 overflow-hidden" title={`1회독: ${stats.r1Count}/${stats.totalItems}`}>
+                          <div
+                            className="bg-indigo-500 h-full rounded-full transition-all duration-300"
+                            style={{ width: `${(stats.r1Count / stats.totalItems) * 100}%` }}
+                          />
+                        </div>
+                        {/* 2회독 바 */}
+                        <div className="bg-gray-100 rounded-full h-2 overflow-hidden" title={`2회독: ${stats.r2Count}/${stats.totalItems}`}>
+                          <div
+                            className="bg-purple-500 h-full rounded-full transition-all duration-300"
+                            style={{ width: `${(stats.r2Count / stats.totalItems) * 100}%` }}
+                          />
+                        </div>
+                        {/* 3회독 바 */}
+                        <div className="bg-gray-100 rounded-full h-2 overflow-hidden" title={`3회독: ${stats.r3Count}/${stats.totalItems}`}>
+                          <div
+                            className="bg-rose-500 h-full rounded-full transition-all duration-300"
+                            style={{ width: `${(stats.r3Count / stats.totalItems) * 100}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="flex justify-between items-center text-[10px] text-gray-400 mt-1.5 font-medium">
-                        <span>진도</span>
+
+                      <div className="flex justify-between items-center text-[10px] text-gray-400 mt-2 font-medium">
+                        <span className="flex items-center gap-1">
+                          <span className="text-indigo-600 font-bold">1회</span>
+                          <span className="text-purple-600 font-bold">2회</span>
+                          <span className="text-rose-600 font-bold">3회</span>
+                        </span>
                         <span className="font-bold text-gray-600">{stats.totalChecks} / {stats.maxChecks}</span>
                       </div>
                     </div>
@@ -407,12 +458,46 @@ export default function ChecklistPage() {
                     </div>
                   </div>
 
-                  {/* 프로그레스 바 */}
-                  <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
-                    <div
-                      className="bg-gradient-to-r from-indigo-500 via-purple-500 to-rose-500 h-2.5 rounded-full transition-all duration-300"
-                      style={{ width: `${Math.min((stats.percent / 300) * 100, 100)}%` }}
-                    />
+                  {/* 1회독, 2회독, 3회독 3단 분리 프로그레스 바 */}
+                  <div className="grid grid-cols-3 gap-2.5 w-full mt-2">
+                    <div>
+                      <div className="flex justify-between text-[11px] font-bold text-indigo-600 mb-1">
+                        <span>1회독</span>
+                        <span className="tabular-nums">{Math.round((stats.r1Count / stats.totalItems) * 100)}%</span>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                        <div
+                          className="bg-indigo-500 h-full rounded-full transition-all duration-300"
+                          style={{ width: `${(stats.r1Count / stats.totalItems) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between text-[11px] font-bold text-purple-600 mb-1">
+                        <span>2회독</span>
+                        <span className="tabular-nums">{Math.round((stats.r2Count / stats.totalItems) * 100)}%</span>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                        <div
+                          className="bg-purple-500 h-full rounded-full transition-all duration-300"
+                          style={{ width: `${(stats.r2Count / stats.totalItems) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between text-[11px] font-bold text-rose-600 mb-1">
+                        <span>3회독</span>
+                        <span className="tabular-nums">{Math.round((stats.r3Count / stats.totalItems) * 100)}%</span>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                        <div
+                          className="bg-rose-500 h-full rounded-full transition-all duration-300"
+                          style={{ width: `${(stats.r3Count / stats.totalItems) * 100}%` }}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               )
