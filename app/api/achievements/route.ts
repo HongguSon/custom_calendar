@@ -14,12 +14,16 @@ export async function GET() {
 
 // POST /api/achievements
 export async function POST(request: Request) {
-  const { text, emoji } = await request.json()
+  const { text, emoji, image_url } = await request.json()
   if (!text?.trim()) return NextResponse.json({ error: '내용을 입력해주세요' }, { status: 400 })
 
   const { data, error } = await supabase
     .from('achievements')
-    .insert({ text: text.trim(), emoji: emoji ?? '🏆' })
+    .insert({
+      text: text.trim(),
+      emoji: emoji ?? '🏆',
+      image_url: image_url || null,
+    })
     .select()
     .single()
 
