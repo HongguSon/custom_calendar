@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import { TOTAL_CHECKLIST_ITEMS } from '@/lib/checklistData'
 
 const QUOTES = [
   { text: "성공은 매일 반복하는 작은 노력들의 합이다.", author: "Robert Collier" },
@@ -28,14 +29,16 @@ export default function Home() {
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
   const [quote, setQuote] = useState(QUOTES[0])
+  const [checklistPercent, setChecklistPercent] = useState<string>('0%')
   const isComposingRef = useRef(false)
 
-  // 페이지 로드 시 DB에서 문구 가져오기 & 랜덤 명언 설정
+  // 페이지 로드 시 DB에서 문구 및 회독 퍼센트 가져오기
   useEffect(() => {
-    // 새로고침할 때마다 랜덤 명언 추첨
+    // 1. 랜덤 명언
     const randomIndex = Math.floor(Math.random() * QUOTES.length)
     setQuote(QUOTES[randomIndex])
 
+    // 2. 메인 문구 로드
     fetch('/api/message')
       .then((r) => r.json())
       .then((data) => {
@@ -47,9 +50,37 @@ export default function Home() {
         console.error(err)
         setLoading(false)
       })
+
+    // 3. 필기 N회독 진행률 로드 (로컬 캐시 우선 반영 → API 동기화)
+    try {
+      const cached = localStorage.getItem('checklist_progress_cache')
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        const count = Object.values(parsed).reduce(
+          (sum: number, p: any) => sum + (p.r1 ? 1 : 0) + (p.r2 ? 1 : 0) + (p.r3 ? 1 : 0),
+          0
+        )
+        const pct = (count / TOTAL_CHECKLIST_ITEMS) * 100
+        setChecklistPercent(pct % 1 === 0 ? `${Math.round(pct)}%` : `${pct.toFixed(1)}%`)
+      }
+    } catch (e) {}
+
+    fetch('/api/checklist')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.progress) {
+          const count = Object.values(data.progress).reduce(
+            (sum: number, p: any) => sum + (p.r1 ? 1 : 0) + (p.r2 ? 1 : 0) + (p.r3 ? 1 : 0),
+            0
+          )
+          const pct = (count / TOTAL_CHECKLIST_ITEMS) * 100
+          setChecklistPercent(pct % 1 === 0 ? `${Math.round(pct)}%` : `${pct.toFixed(1)}%`)
+        }
+      })
+      .catch(() => {})
   }, [])
 
-  // 다른 명언 랜덤 뽑기 버튼
+  // 다른 명언 랜덤 뽑기
   const handleShuffleQuote = () => {
     setQuote((prev) => {
       let nextIndex = Math.floor(Math.random() * QUOTES.length)
@@ -60,7 +91,7 @@ export default function Home() {
     })
   }
 
-  // 저장 버튼 클릭
+  // 문구 저장
   const handleSave = async () => {
     const text = input.trim()
     if (!text || saving) return
@@ -88,7 +119,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center p-4 sm:p-6 text-gray-900">
-      <div className="text-center max-w-2xl mx-auto w-full">
+      <div className="text-center max-w-3xl mx-auto w-full">
 
         {/* 이모지 */}
         <div className="text-6xl sm:text-7xl mb-6 sm:mb-8 animate-bounce">📚</div>
@@ -142,33 +173,92 @@ export default function Home() {
           오늘도 한 걸음씩 🌱 꾸준히가 최고야 ✨
         </p>
 
-        {/* 카드 3개 */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4 mb-8 sm:mb-10 text-left sm:text-center">
-          <Link href="/goals" className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-indigo-100 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex sm:flex-col items-center gap-3.5 sm:gap-0">
-            <div className="text-3xl mb-0 sm:mb-2 flex-shrink-0">🎯</div>
+        {/* 메인 메뉴 카드 4개 (2x2 모바일 그리드 / 4열 데스크탑 그리드) */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 sm:gap-4 mb-8 sm:mb-10 text-left sm:text-center">
+
+          {/* 1. 필기 N회독 체크리스트 (아이폰 알림 스타일 퍼센트 배지 장착) */}
+          <Link
+            href="/checklist"
+            className="group relative bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-rose-100 hover:border-rose-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-visible"
+          >
+            {/* 아이폰 알림 스타일 퍼센트 배지 */}
+            <div className="absolute -top-2.5 -right-2.5 z-20">
+              <span className="inline-flex items-center justify-center bg-rose-500 text-white text-[11px] sm:text-xs font-black px-2.5 py-0.5 rounded-full shadow-md border-2 border-white tabular-nums tracking-tight">
+                {checklistPercent}
+              </span>
+            </div>
+
+            <div className="text-3xl sm:text-4xl mb-2 sm:mb-3 flex-shrink-0 transition group-hover:scale-110 duration-200">
+              📖
+            </div>
             <div>
-              <p className="font-bold text-gray-900 text-base">목표 설정</p>
-              <p className="text-xs text-gray-400 mt-0.5 sm:mt-1">오늘의 목표를 정해봐</p>
+              <p className="font-extrabold text-gray-900 text-base sm:text-lg tracking-tight group-hover:text-rose-600 transition">
+                필기 N회독
+              </p>
+              <p className="text-[11px] sm:text-xs text-gray-400 mt-0.5">
+                총 297개 주제 마일스톤
+              </p>
             </div>
           </Link>
-          <Link href="/focus" className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-purple-100 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex sm:flex-col items-center gap-3.5 sm:gap-0">
-            <div className="text-3xl mb-0 sm:mb-2 flex-shrink-0">⏱️</div>
+
+          {/* 2. 목표 설정 */}
+          <Link
+            href="/goals"
+            className="group relative bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-indigo-100 hover:border-indigo-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden"
+          >
+            <div className="text-3xl sm:text-4xl mb-2 sm:mb-3 flex-shrink-0 transition group-hover:scale-110 duration-200">
+              🎯
+            </div>
             <div>
-              <p className="font-bold text-gray-900 text-base">집중 모드</p>
-              <p className="text-xs text-gray-400 mt-0.5 sm:mt-1">25분 집중, 5분 휴식</p>
+              <p className="font-extrabold text-gray-900 text-base sm:text-lg tracking-tight group-hover:text-indigo-600 transition">
+                목표 설정
+              </p>
+              <p className="text-[11px] sm:text-xs text-gray-400 mt-0.5">
+                오늘의 목표 관리
+              </p>
             </div>
           </Link>
-          <Link href="/achievements" className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-pink-100 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex sm:flex-col items-center gap-3.5 sm:gap-0">
-            <div className="text-3xl mb-0 sm:mb-2 flex-shrink-0">🏆</div>
+
+          {/* 3. 집중 모드 */}
+          <Link
+            href="/focus"
+            className="group relative bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-purple-100 hover:border-purple-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden"
+          >
+            <div className="text-3xl sm:text-4xl mb-2 sm:mb-3 flex-shrink-0 transition group-hover:scale-110 duration-200">
+              ⏱️
+            </div>
             <div>
-              <p className="font-bold text-gray-900 text-base">성취 기록</p>
-              <p className="text-xs text-gray-400 mt-0.5 sm:mt-1">오늘 한 것들을 기록해</p>
+              <p className="font-extrabold text-gray-900 text-base sm:text-lg tracking-tight group-hover:text-purple-600 transition">
+                집중 모드
+              </p>
+              <p className="text-[11px] sm:text-xs text-gray-400 mt-0.5">
+                뽀모도로 맞춤 타이머
+              </p>
             </div>
           </Link>
+
+          {/* 4. 성취 기록 */}
+          <Link
+            href="/achievements"
+            className="group relative bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-pink-100 hover:border-pink-300 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden"
+          >
+            <div className="text-3xl sm:text-4xl mb-2 sm:mb-3 flex-shrink-0 transition group-hover:scale-110 duration-200">
+              🏆
+            </div>
+            <div>
+              <p className="font-extrabold text-gray-900 text-base sm:text-lg tracking-tight group-hover:text-pink-600 transition">
+                성취 기록
+              </p>
+              <p className="text-[11px] sm:text-xs text-gray-400 mt-0.5">
+                사진 인증 & 기록
+              </p>
+            </div>
+          </Link>
+
         </div>
 
         {/* 랜덤 명언 카드 */}
-        <div className="bg-white/90 backdrop-blur-xs rounded-2xl p-5 sm:p-6 shadow-sm border border-purple-100 mx-auto max-w-lg transition hover:shadow-md relative group">
+        <div className="bg-white/90 backdrop-blur-xs rounded-3xl p-5 sm:p-6 shadow-sm border border-purple-100 mx-auto max-w-lg transition hover:shadow-md relative group">
           <p className="text-gray-800 italic text-sm sm:text-base font-medium leading-relaxed">
             &ldquo;{quote.text}&rdquo;
           </p>
