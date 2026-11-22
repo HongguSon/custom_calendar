@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   CHECKLIST_CATEGORIES,
   TOTAL_CHECKLIST_ITEMS,
@@ -20,11 +21,24 @@ function formatPercent(num: number): string {
   return `${num.toFixed(1)}%`
 }
 
-export default function ChecklistPage() {
+function ChecklistContent() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const catParam = searchParams.get('cat')
+
   const [progress, setProgress] = useState<Record<string, ProgressItem>>({})
   const [loading, setLoading] = useState(true)
-  const [selectedCategory, setSelectedCategory] = useState<ChecklistCategory | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+
+  // URL query parameter (?cat=cat_1 등 또는 category title) 기반으로 선택된 과목 결정
+  const selectedCategory: ChecklistCategory | null = catParam
+    ? CHECKLIST_CATEGORIES.find((c) => c.id === catParam || c.title === catParam) || null
+    : null
+
+  // 과목 선택/변경 시 무조건 화면 최상단으로 스크롤 이동
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+  }, [catParam])
 
   // 1. 초기 데이터 로드 (로컬스토리지 캐시 우선 로드 → DB 동기화)
   useEffect(() => {
@@ -56,6 +70,18 @@ export default function ChecklistPage() {
         setLoading(false)
       })
   }, [])
+
+  // 과목 진입 핸들러 (브라우저 히스토리에 push하여 뒤로가기 완벽 지원)
+  const handleSelectCategory = (category: ChecklistCategory) => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+    router.push(`/checklist?cat=${category.id}`)
+  }
+
+  // 전체 과목 목록으로 돌아가기 (URL 쿼리 제거)
+  const handleBackToOverview = () => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+    router.push('/checklist')
+  }
 
   // 2. 단일 체크 토글 핸들러 (낙관적 UI + 로컬 캐시 + DB 영구 저장)
   const handleToggle = (itemId: string, round: 'r1' | 'r2' | 'r3') => {
@@ -201,8 +227,9 @@ export default function ChecklistPage() {
           <div className="flex items-center gap-2.5">
             {selectedCategory ? (
               <button
-                onClick={() => setSelectedCategory(null)}
-                className="text-gray-500 hover:text-gray-900 transition text-sm font-semibold flex items-center gap-1 bg-white/80 px-3 py-1.5 rounded-xl border border-gray-200 shadow-2xs"
+                onClick={handleBackToOverview}
+                type="button"
+                className="text-gray-600 hover:text-gray-900 transition text-sm font-semibold flex items-center gap-1 bg-white/80 px-3 py-1.5 rounded-xl border border-gray-200 shadow-2xs active:scale-95"
               >
                 <span>←</span>
                 <span>전체 과목</span>
@@ -210,7 +237,7 @@ export default function ChecklistPage() {
             ) : (
               <Link
                 href="/"
-                className="text-gray-500 hover:text-gray-900 transition text-sm font-semibold flex items-center gap-1 bg-white/80 px-3 py-1.5 rounded-xl border border-gray-200 shadow-2xs"
+                className="text-gray-600 hover:text-gray-900 transition text-sm font-semibold flex items-center gap-1 bg-white/80 px-3 py-1.5 rounded-xl border border-gray-200 shadow-2xs active:scale-95"
               >
                 <span>←</span>
                 <span>홈으로</span>
@@ -349,7 +376,7 @@ export default function ChecklistPage() {
                 return (
                   <div
                     key={category.id}
-                    onClick={() => setSelectedCategory(category)}
+                    onClick={() => handleSelectCategory(category)}
                     className="group relative bg-white rounded-3xl p-4 sm:p-5 shadow-xs border border-gray-100 hover:border-purple-200 hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-visible active:scale-98"
                   >
                     {/* 우측 상단 아이폰 알림 스타일 퍼센트 배지 */}
@@ -374,23 +401,19 @@ export default function ChecklistPage() {
 
                     {/* 과목 내 1/2/3회독 분리 프로그레스 바 3개 */}
                     <div className="mt-4 pt-3 border-t border-gray-50">
-                      {/* 1, 2, 3회독 3단 분리 게이지 바 */}
                       <div className="grid grid-cols-3 gap-1.5 w-full">
-                        {/* 1회독 바 */}
                         <div className="bg-gray-100 rounded-full h-2 overflow-hidden" title={`1회독: ${stats.r1Count}/${stats.totalItems}`}>
                           <div
                             className="bg-indigo-500 h-full rounded-full transition-all duration-300"
                             style={{ width: `${(stats.r1Count / stats.totalItems) * 100}%` }}
                           />
                         </div>
-                        {/* 2회독 바 */}
                         <div className="bg-gray-100 rounded-full h-2 overflow-hidden" title={`2회독: ${stats.r2Count}/${stats.totalItems}`}>
                           <div
                             className="bg-purple-500 h-full rounded-full transition-all duration-300"
                             style={{ width: `${(stats.r2Count / stats.totalItems) * 100}%` }}
                           />
                         </div>
-                        {/* 3회독 바 */}
                         <div className="bg-gray-100 rounded-full h-2 overflow-hidden" title={`3회독: ${stats.r3Count}/${stats.totalItems}`}>
                           <div
                             className="bg-rose-500 h-full rounded-full transition-all duration-300"
@@ -635,8 +658,9 @@ export default function ChecklistPage() {
             {/* 하단 전체 과목으로 돌아가기 버튼 */}
             <div className="mt-8 pt-4 border-t border-gray-100 text-center">
               <button
-                onClick={() => setSelectedCategory(null)}
-                className="w-full sm:w-auto px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm rounded-xl transition"
+                onClick={handleBackToOverview}
+                type="button"
+                className="w-full sm:w-auto px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm rounded-xl transition active:scale-95"
               >
                 ← 전체 과목 목록으로 이동
               </button>
@@ -646,5 +670,19 @@ export default function ChecklistPage() {
 
       </div>
     </main>
+  )
+}
+
+export default function ChecklistPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-6 flex items-center justify-center">
+          <div className="text-gray-400 font-medium">로딩 중...</div>
+        </main>
+      }
+    >
+      <ChecklistContent />
+    </Suspense>
   )
 }
