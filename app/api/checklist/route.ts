@@ -36,10 +36,30 @@ export async function GET() {
   }
 }
 
-// POST /api/checklist → 회독 체크 업데이트 (UPSERT)
+// POST /api/checklist → 회독 체크 업데이트 (단일 또는 다중 벌크 UPSERT)
 export async function POST(request: Request) {
   try {
     const body = await request.json()
+
+    // 1. 다중 벌크 업데이트 (전체 회독 체크 기능)
+    if (Array.isArray(body.items)) {
+      const payload = body.items.map((item: any) => ({
+        ...item,
+        updated_at: new Date().toISOString(),
+      }))
+
+      const { data, error } = await supabase
+        .from('checklist_progress')
+        .upsert(payload)
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 })
+      }
+
+      return NextResponse.json({ success: true, count: payload.length })
+    }
+
+    // 2. 단일 아이템 업데이트
     const { id, r1, r2, r3 } = body
 
     if (!id) {

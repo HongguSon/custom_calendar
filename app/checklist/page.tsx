@@ -57,7 +57,7 @@ export default function ChecklistPage() {
       })
   }, [])
 
-  // 2. 체크 토글 핸들러 (낙관적 UI + 로컬 캐시 + DB 영구 저장)
+  // 2. 단일 체크 토글 핸들러 (낙관적 UI + 로컬 캐시 + DB 영구 저장)
   const handleToggle = (itemId: string, round: 'r1' | 'r2' | 'r3') => {
     const current = progress[itemId] || { r1: false, r2: false, r3: false }
     const updatedItem = {
@@ -90,7 +90,52 @@ export default function ChecklistPage() {
     })
   }
 
-  // 3. 특정 과목의 진행 퍼센트 계산: (해당 과목의 총 체크 수 / 해당 과목 주제 수) * 100
+  // 3. 특정 회독(1회독/2회독/3회독) 컬럼만 전체 선택 / 해제 토글
+  const handleToggleAllRound = (round: 'r1' | 'r2' | 'r3') => {
+    if (!selectedCategory) return
+
+    // 현재 선택된 과목 내에서 해당 회독이 모두 체크되어 있는지 확인
+    const isAllChecked = selectedCategory.items.every(
+      (item) => progress[item.id]?.[round]
+    )
+    const targetValue = !isAllChecked // 모두 체크되어 있으면 전체 해제(false), 아니면 전체 체크(true)
+
+    const nextProgress = { ...progress }
+    const itemsToUpdate: Array<{ id: string; r1?: boolean; r2?: boolean; r3?: boolean }> = []
+
+    for (const item of selectedCategory.items) {
+      const current = nextProgress[item.id] || { r1: false, r2: false, r3: false }
+      const updated = {
+        ...current,
+        [round]: targetValue,
+      }
+      nextProgress[item.id] = updated
+      itemsToUpdate.push({
+        id: item.id,
+        r1: updated.r1,
+        r2: updated.r2,
+        r3: updated.r3,
+      })
+    }
+
+    setProgress(nextProgress)
+
+    // 로컬스토리지 즉시 동기화
+    try {
+      localStorage.setItem('checklist_progress_cache', JSON.stringify(nextProgress))
+    } catch (e) {}
+
+    // Supabase DB 벌크 업데이트
+    fetch('/api/checklist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: itemsToUpdate }),
+    }).catch((err) => {
+      console.error('Bulk DB update failed, kept in local cache:', err)
+    })
+  }
+
+  // 4. 특정 과목의 진행 퍼센트 계산: (해당 과목의 총 체크 수 / 해당 과목 주제 수) * 100
   const getCategoryStats = (category: ChecklistCategory) => {
     let r1Count = 0
     let r2Count = 0
@@ -119,7 +164,7 @@ export default function ChecklistPage() {
     }
   }
 
-  // 4. 전체 회독 퍼센트 계산: (모든 체크 수 / 전체 297개 주제) * 100
+  // 5. 전체 회독 퍼센트 계산: (모든 체크 수 / 전체 297개 주제) * 100
   const totalCompletedChecks = Object.values(progress).reduce(
     (sum, p) => sum + (p.r1 ? 1 : 0) + (p.r2 ? 1 : 0) + (p.r3 ? 1 : 0),
     0
@@ -135,6 +180,17 @@ export default function ChecklistPage() {
   const filteredCategories = CHECKLIST_CATEGORIES.filter((c) =>
     c.title.toLowerCase().includes(searchQuery.trim().toLowerCase())
   )
+
+  // 현재 과목의 각 회독별 전체 완료 여부
+  const isAllR1 = selectedCategory
+    ? selectedCategory.items.length > 0 && selectedCategory.items.every((item) => progress[item.id]?.r1)
+    : false
+  const isAllR2 = selectedCategory
+    ? selectedCategory.items.length > 0 && selectedCategory.items.every((item) => progress[item.id]?.r2)
+    : false
+  const isAllR3 = selectedCategory
+    ? selectedCategory.items.length > 0 && selectedCategory.items.every((item) => progress[item.id]?.r3)
+    : false
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-4 sm:p-6 text-gray-900 pb-16">
@@ -362,13 +418,61 @@ export default function ChecklistPage() {
               )
             })()}
 
-            {/* 테이블 헤더: 소제목 (좌측) | 1회독, 2회독, 3회독 (우측) */}
-            <div className="flex items-center justify-between px-3 py-2.5 bg-gray-50/80 rounded-2xl mb-2 text-xs font-bold text-gray-600">
+            {/* 테이블 헤더: 소제목 (좌측) | 1회독, 2회독, 3회독 컬럼별 전체 체크 버튼 (우측) */}
+            <div className="flex items-center justify-between px-3 py-2.5 bg-gray-50/90 rounded-2xl mb-2 text-xs font-bold text-gray-600">
               <span className="flex-1">소제목 / 학습 주제</span>
+
               <div className="flex items-center gap-3 sm:gap-6 flex-shrink-0 text-center font-extrabold pr-1">
-                <span className="w-10 sm:w-12 text-indigo-600">1회독</span>
-                <span className="w-10 sm:w-12 text-purple-600">2회독</span>
-                <span className="w-10 sm:w-12 text-rose-600">3회독</span>
+                {/* 1회독 컬럼 및 전체 선택 버튼 */}
+                <div className="w-10 sm:w-12 flex flex-col items-center gap-1">
+                  <span className="text-indigo-600 text-xs">1회독</span>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleAllRound('r1')}
+                    className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold transition active:scale-90 ${
+                      isAllR1
+                        ? 'bg-indigo-500 text-white shadow-2xs'
+                        : 'bg-white text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 border border-gray-200'
+                    }`}
+                    title="1회독 전체 선택 / 해제"
+                  >
+                    {isAllR1 ? '해제' : '전체'}
+                  </button>
+                </div>
+
+                {/* 2회독 컬럼 및 전체 선택 버튼 */}
+                <div className="w-10 sm:w-12 flex flex-col items-center gap-1">
+                  <span className="text-purple-600 text-xs">2회독</span>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleAllRound('r2')}
+                    className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold transition active:scale-90 ${
+                      isAllR2
+                        ? 'bg-purple-500 text-white shadow-2xs'
+                        : 'bg-white text-gray-500 hover:bg-purple-50 hover:text-purple-600 border border-gray-200'
+                    }`}
+                    title="2회독 전체 선택 / 해제"
+                  >
+                    {isAllR2 ? '해제' : '전체'}
+                  </button>
+                </div>
+
+                {/* 3회독 컬럼 및 전체 선택 버튼 */}
+                <div className="w-10 sm:w-12 flex flex-col items-center gap-1">
+                  <span className="text-rose-600 text-xs">3회독</span>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleAllRound('r3')}
+                    className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold transition active:scale-90 ${
+                      isAllR3
+                        ? 'bg-rose-500 text-white shadow-2xs'
+                        : 'bg-white text-gray-500 hover:bg-rose-50 hover:text-rose-600 border border-gray-200'
+                    }`}
+                    title="3회독 전체 선택 / 해제"
+                  >
+                    {isAllR3 ? '해제' : '전체'}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -394,7 +498,7 @@ export default function ChecklistPage() {
                       </p>
                     </div>
 
-                    {/* 1회독, 2회독, 3회독 체크박스 3개 */}
+                    {/* 1회독, 2회독, 3회독 개별 체크박스 3개 */}
                     <div className="flex items-center gap-3 sm:gap-6 flex-shrink-0">
                       {/* 1회독 체크박스 */}
                       <button
