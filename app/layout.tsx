@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "서우야 공부 열심히해",
+  title: "서우야 먹여살릴게 공부하지마",
   description: "서우의 공부 응원 웹앱",
   icons: {
     icon: "/icon.svg",
