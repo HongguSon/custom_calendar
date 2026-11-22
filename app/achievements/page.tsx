@@ -26,6 +26,7 @@ export default function AchievementsPage() {
 
   const isComposingRef = useRef(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
 
   // 성취 불러오기
   useEffect(() => {
@@ -74,9 +75,8 @@ export default function AchievementsPage() {
       URL.revokeObjectURL(previewUrl)
       setPreviewUrl(null)
     }
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
+    if (fileInputRef.current) fileInputRef.current.value = ''
+    if (cameraInputRef.current) cameraInputRef.current.value = ''
   }
 
   // 성취 추가
@@ -210,28 +210,52 @@ export default function AchievementsPage() {
             </button>
           </div>
 
-          {/* 사진 첨부 버튼 및 미리보기 */}
-          <div className="flex items-center justify-between pt-1">
+          {/* 사진 첨부 버튼들 및 미리보기 */}
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+            {/* 갤러리 선택용 파일 인풋 */}
             <input
               type="file"
               ref={fileInputRef}
               onChange={handleFileChange}
-              accept="image/*"
+              accept="image/*,image/jpeg,image/png,image/webp,image/gif"
               className="hidden"
             />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 hover:text-purple-600 px-3 py-1.5 rounded-lg border border-gray-200 hover:border-purple-300 transition"
-            >
-              <span>📷</span>
-              <span>사진 첨부 (최대 20MB)</span>
-            </button>
+            {/* 카메라 다이렉트 촬영용 파일 인풋 */}
+            <input
+              type="file"
+              ref={cameraInputRef}
+              onChange={handleFileChange}
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+            />
 
-            {selectedFile && (
-              <span className="text-xs text-gray-400">
-                {(selectedFile.size / (1024 * 1024)).toFixed(1)} MB
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-700 hover:text-purple-600 px-3 py-1.5 rounded-lg border border-gray-200 hover:border-purple-300 bg-gray-50/50 hover:bg-purple-50/30 transition shadow-xs"
+              >
+                <span>🖼️</span>
+                <span>앨범 / 갤러리</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => cameraInputRef.current?.click()}
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-700 hover:text-purple-600 px-3 py-1.5 rounded-lg border border-gray-200 hover:border-purple-300 bg-gray-50/50 hover:bg-purple-50/30 transition shadow-xs"
+              >
+                <span>📸</span>
+                <span>카메라 촬영</span>
+              </button>
+            </div>
+
+            {selectedFile ? (
+              <span className="text-xs text-purple-600 font-medium">
+                {(selectedFile.size / (1024 * 1024)).toFixed(1)} MB 선택됨
               </span>
+            ) : (
+              <span className="text-[11px] text-gray-400">최대 20MB</span>
             )}
           </div>
 
