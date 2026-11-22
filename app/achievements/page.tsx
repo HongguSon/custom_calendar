@@ -17,6 +17,7 @@ export default function AchievementsPage() {
   const [input, setInput] = useState('')
   const [selectedEmoji, setSelectedEmoji] = useState('🏆')
   const [loading, setLoading] = useState(true)
+  const [composing, setComposing] = useState(false)
 
   // 성취 불러오기
   useEffect(() => {
@@ -83,7 +84,9 @@ export default function AchievementsPage() {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && addAchievement()}
+            onKeyDown={(e) => e.key === 'Enter' && !composing && addAchievement()}
+            onCompositionStart={() => setComposing(true)}
+            onCompositionEnd={() => setComposing(false)}
             placeholder="오늘 이룬 것을 기록해봐..."
             className="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-purple-400 transition bg-white shadow-sm"
           />

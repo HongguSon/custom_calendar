@@ -14,6 +14,7 @@ export default function GoalsPage() {
   const [goals, setGoals] = useState<Goal[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(true)
+  const [composing, setComposing] = useState(false)
 
   // 목표 불러오기
   useEffect(() => {
@@ -95,7 +96,9 @@ export default function GoalsPage() {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && addGoal()}
+            onKeyDown={(e) => e.key === 'Enter' && !composing && addGoal()}
+            onCompositionStart={() => setComposing(true)}
+            onCompositionEnd={() => setComposing(false)}
             placeholder="목표를 입력하세요..."
             className="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-indigo-400 transition bg-white shadow-sm"
           />
