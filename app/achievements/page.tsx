@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 
 interface Achievement {
@@ -17,7 +17,8 @@ export default function AchievementsPage() {
   const [input, setInput] = useState('')
   const [selectedEmoji, setSelectedEmoji] = useState('🏆')
   const [loading, setLoading] = useState(true)
-  const [composing, setComposing] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const isComposingRef = useRef(false)
 
   // 성취 불러오기
   useEffect(() => {
@@ -28,15 +29,36 @@ export default function AchievementsPage() {
 
   // 성취 추가
   const addAchievement = async () => {
-    if (!input.trim()) return
-    const res = await fetch('/api/achievements', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: input.trim(), emoji: selectedEmoji }),
-    })
-    const newItem = await res.json()
-    setAchievements((prev) => [newItem, ...prev])
-    setInput('')
+    const text = input.trim()
+    if (!text || submitting) return
+
+    setSubmitting(true)
+    setInput('') // 입력창 즉시 비우기 (중복 입력 방지)
+
+    try {
+      const res = await fetch('/api/achievements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, emoji: selectedEmoji }),
+      })
+      if (!res.ok) throw new Error('성취 기록 저장 실패')
+      const newItem = await res.json()
+      setAchievements((prev) => [newItem, ...prev])
+    } catch (err) {
+      console.error(err)
+      setInput(text) // 실패 시 복구
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  // 엔터 키 처리 (한글 조합 중 엔터 무시)
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      if (e.nativeEvent.isComposing || isComposingRef.current) return
+      e.preventDefault()
+      addAchievement()
+    }
   }
 
   // 삭제
@@ -84,17 +106,18 @@ export default function AchievementsPage() {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && !composing && addAchievement()}
-            onCompositionStart={() => setComposing(true)}
-            onCompositionEnd={() => setComposing(false)}
+            onKeyDown={handleKeyDown}
+            onCompositionStart={() => { isComposingRef.current = true }}
+            onCompositionEnd={() => { isComposingRef.current = false }}
             placeholder="오늘 이룬 것을 기록해봐..."
             className="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-purple-400 transition bg-white shadow-sm"
           />
           <button
             onClick={addAchievement}
-            className="px-5 py-3 bg-purple-500 text-white rounded-xl text-sm font-semibold hover:bg-purple-600 transition shadow-sm"
+            disabled={submitting}
+            className="px-5 py-3 bg-purple-500 text-white rounded-xl text-sm font-semibold hover:bg-purple-600 disabled:opacity-50 transition shadow-sm"
           >
-            기록
+            {submitting ? '기록 중...' : '기록'}
           </button>
         </div>
 

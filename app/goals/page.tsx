@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 
 interface Goal {
@@ -14,7 +14,8 @@ export default function GoalsPage() {
   const [goals, setGoals] = useState<Goal[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(true)
-  const [composing, setComposing] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const isComposingRef = useRef(false)
 
   // 목표 불러오기
   useEffect(() => {
@@ -25,15 +26,36 @@ export default function GoalsPage() {
 
   // 목표 추가
   const addGoal = async () => {
-    if (!input.trim()) return
-    const res = await fetch('/api/goals', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: input.trim() }),
-    })
-    const newGoal = await res.json()
-    setGoals((prev) => [newGoal, ...prev])
-    setInput('')
+    const text = input.trim()
+    if (!text || submitting) return
+
+    setSubmitting(true)
+    setInput('') // 한글 조합 중복 및 연속 전송 방지를 위해 즉시 초기화
+
+    try {
+      const res = await fetch('/api/goals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      })
+      if (!res.ok) throw new Error('목표 저장 실패')
+      const newGoal = await res.json()
+      setGoals((prev) => [newGoal, ...prev])
+    } catch (err) {
+      console.error(err)
+      setInput(text) // 전송 실패 시 기존 입력값 복구
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  // 엔터 키 처리 (한글 IME 완성 중 엔터는 무시)
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      if (e.nativeEvent.isComposing || isComposingRef.current) return
+      e.preventDefault()
+      addGoal()
+    }
   }
 
   // 완료 토글
@@ -96,17 +118,18 @@ export default function GoalsPage() {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && !composing && addGoal()}
-            onCompositionStart={() => setComposing(true)}
-            onCompositionEnd={() => setComposing(false)}
+            onKeyDown={handleKeyDown}
+            onCompositionStart={() => { isComposingRef.current = true }}
+            onCompositionEnd={() => { isComposingRef.current = false }}
             placeholder="목표를 입력하세요..."
             className="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-indigo-400 transition bg-white shadow-sm"
           />
           <button
             onClick={addGoal}
-            className="px-5 py-3 bg-indigo-500 text-white rounded-xl text-sm font-semibold hover:bg-indigo-600 transition shadow-sm"
+            disabled={submitting}
+            className="px-5 py-3 bg-indigo-500 text-white rounded-xl text-sm font-semibold hover:bg-indigo-600 disabled:opacity-50 transition shadow-sm"
           >
-            추가
+            {submitting ? '추가 중...' : '추가'}
           </button>
         </div>
 

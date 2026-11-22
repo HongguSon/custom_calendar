@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 
 export default function Home() {
@@ -9,6 +9,7 @@ export default function Home() {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
+  const isComposingRef = useRef(false)
 
   // 페이지 로드 시 DB에서 문구 가져오기
   useEffect(() => {
@@ -23,16 +24,28 @@ export default function Home() {
 
   // 저장 버튼 클릭
   const handleSave = async () => {
-    if (!input.trim()) return
+    const text = input.trim()
+    if (!text || saving) return
     setSaving(true)
-    await fetch('/api/message', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: input.trim() }),
-    })
-    setMessage(input.trim())
-    setEditing(false)
-    setSaving(false)
+    try {
+      await fetch('/api/message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text }),
+      })
+      setMessage(text)
+      setEditing(false)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      if (e.nativeEvent.isComposing || isComposingRef.current) return
+      e.preventDefault()
+      handleSave()
+    }
   }
 
   return (
@@ -49,7 +62,9 @@ export default function Home() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+              onKeyDown={handleKeyDown}
+              onCompositionStart={() => { isComposingRef.current = true }}
+              onCompositionEnd={() => { isComposingRef.current = false }}
               className="w-full max-w-md text-center text-2xl font-bold border-b-2 border-purple-400 bg-transparent outline-none py-2 text-gray-700"
               autoFocus
             />
