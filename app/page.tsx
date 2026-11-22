@@ -3,16 +3,39 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 
+const QUOTES = [
+  { text: "성공은 매일 반복하는 작은 노력들의 합이다.", author: "Robert Collier" },
+  { text: "시작이 반이다. 시작한 사람만이 끝을 볼 수 있다.", author: "아리스토텔레스" },
+  { text: "오늘 걷지 않으면 내일은 뛰어야 한다.", author: "카를레스 푸욜" },
+  { text: "작은 기회로부터 종종 위대한 업적이 시작된다.", author: "데모스테네스" },
+  { text: "꿈을 이루고자 하는 용기만 있다면 모든 꿈을 이룰 수 있다.", author: "월트 디즈니" },
+  { text: "포기하지 않는 한 실패란 없다. 모두 과정일 뿐이다.", author: "넬슨 만델라" },
+  { text: "미래는 오늘 당신이 무엇을 하느냐에 달려 있다.", author: "마하트마 간디" },
+  { text: "노력은 결코 배신하지 않는다. 서두르지 말고 꾸준히.", author: "오프라 윈프리" },
+  { text: "지금의 땀방울은 훗날 가장 찬란한 결실이 될 것이다.", author: "헤르만 헤세" },
+  { text: "한 걸음 한 걸음이 모여 마침내 산 정상에 닿는다.", author: "공자" },
+  { text: "자신을 믿어라. 당신은 생각보다 훨씬 더 많은 것을 해낼 수 있다.", author: "노먼 빈센트 필" },
+  { text: "가장 어두운 밤도 언젠가는 끝나고 해는 떠오른다.", author: "빅토르 위고" },
+  { text: "지식을 얻는 유일한 방법은 경험뿐이다.", author: "알베르트 아인슈타인" },
+  { text: "할 수 있다고 믿는 사람은 결국 해낸다.", author: "베르길리우스" },
+  { text: "오늘 하루도 서우가 해낼 수 있는 최고의 날이야!", author: "응원단장" },
+]
+
 export default function Home() {
   const [message, setMessage] = useState('')
   const [input, setInput] = useState('')
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [quote, setQuote] = useState(QUOTES[0])
   const isComposingRef = useRef(false)
 
-  // 페이지 로드 시 DB에서 문구 가져오기
+  // 페이지 로드 시 DB에서 문구 가져오기 & 랜덤 명언 설정
   useEffect(() => {
+    // 새로고침할 때마다 랜덤 명언 추첨
+    const randomIndex = Math.floor(Math.random() * QUOTES.length)
+    setQuote(QUOTES[randomIndex])
+
     fetch('/api/message')
       .then((r) => r.json())
       .then((data) => {
@@ -25,6 +48,17 @@ export default function Home() {
         setLoading(false)
       })
   }, [])
+
+  // 다른 명언 랜덤 뽑기 버튼
+  const handleShuffleQuote = () => {
+    setQuote((prev) => {
+      let nextIndex = Math.floor(Math.random() * QUOTES.length)
+      while (QUOTES.length > 1 && QUOTES[nextIndex].text === prev.text) {
+        nextIndex = Math.floor(Math.random() * QUOTES.length)
+      }
+      return QUOTES[nextIndex]
+    })
+  }
 
   // 저장 버튼 클릭
   const handleSave = async () => {
@@ -133,12 +167,24 @@ export default function Home() {
           </Link>
         </div>
 
-        {/* 명언 */}
-        <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 mx-auto max-w-lg">
-          <p className="text-gray-700 italic text-sm sm:text-base font-medium">
-            &ldquo;성공은 매일 반복하는 작은 노력들의 합이다.&rdquo;
+        {/* 랜덤 명언 카드 */}
+        <div className="bg-white/90 backdrop-blur-xs rounded-2xl p-5 sm:p-6 shadow-sm border border-purple-100 mx-auto max-w-lg transition hover:shadow-md relative group">
+          <p className="text-gray-800 italic text-sm sm:text-base font-medium leading-relaxed">
+            &ldquo;{quote.text}&rdquo;
           </p>
-          <p className="text-gray-400 text-xs sm:text-sm mt-2">— Robert Collier</p>
+          <div className="flex items-center justify-center gap-2 mt-2.5">
+            <span className="text-xs sm:text-sm text-gray-400 font-normal">
+              — {quote.author}
+            </span>
+            <button
+              onClick={handleShuffleQuote}
+              type="button"
+              className="text-xs text-purple-400 hover:text-purple-600 p-1 rounded-full hover:bg-purple-50 transition active:rotate-180 duration-300"
+              title="다른 명언 보기"
+            >
+              🔄
+            </button>
+          </div>
         </div>
 
       </div>
