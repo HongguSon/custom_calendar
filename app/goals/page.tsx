@@ -21,7 +21,14 @@ export default function GoalsPage() {
   useEffect(() => {
     fetch('/api/goals')
       .then((r) => r.json())
-      .then((data) => { setGoals(data); setLoading(false) })
+      .then((data) => {
+        if (Array.isArray(data)) setGoals(data)
+        setLoading(false)
+      })
+      .catch((err) => {
+        console.error(err)
+        setLoading(false)
+      })
   }, [])
 
   // 목표 추가
@@ -84,36 +91,36 @@ export default function GoalsPage() {
   const doneCount = goals.filter((g) => g.done).length
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-6">
-      <div className="max-w-lg mx-auto">
+    <main className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-4 sm:p-6 text-gray-900">
+      <div className="max-w-lg mx-auto w-full">
 
         {/* 헤더 */}
-        <div className="flex items-center gap-3 mb-8">
-          <Link href="/" className="text-gray-400 hover:text-gray-600 transition text-2xl">←</Link>
+        <div className="flex items-center gap-3 mb-6">
+          <Link href="/" className="text-gray-400 hover:text-gray-700 transition text-2xl p-1">←</Link>
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">🎯 목표 설정</h1>
-            <p className="text-sm text-gray-400">오늘의 목표를 정해봐</p>
+            <h1 className="text-2xl font-bold text-gray-900">🎯 목표 설정</h1>
+            <p className="text-xs sm:text-sm text-gray-500">오늘의 목표를 정하고 하나씩 지워봐</p>
           </div>
         </div>
 
         {/* 진행도 */}
         {goals.length > 0 && (
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-indigo-100 mb-4">
-            <div className="flex justify-between text-sm text-gray-500 mb-2">
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-indigo-100 mb-4 w-full">
+            <div className="flex justify-between text-xs sm:text-sm text-gray-500 mb-2">
               <span>오늘의 진행도</span>
-              <span className="font-semibold text-indigo-500">{doneCount} / {goals.length}</span>
+              <span className="font-bold text-indigo-600">{doneCount} / {goals.length}</span>
             </div>
-            <div className="w-full bg-gray-100 rounded-full h-2">
+            <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
               <div
-                className="bg-gradient-to-r from-indigo-400 to-purple-400 h-2 rounded-full transition-all duration-500"
+                className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2.5 rounded-full transition-all duration-500"
                 style={{ width: `${(doneCount / goals.length) * 100}%` }}
               />
             </div>
           </div>
         )}
 
-        {/* 입력 */}
-        <div className="flex gap-2 mb-4">
+        {/* 입력 (모바일 폭 넘침 방지: min-w-0 flex-1 + flex-shrink-0) */}
+        <div className="flex items-center gap-2 mb-4 w-full">
           <input
             type="text"
             value={input}
@@ -122,52 +129,54 @@ export default function GoalsPage() {
             onCompositionStart={() => { isComposingRef.current = true }}
             onCompositionEnd={() => { isComposingRef.current = false }}
             placeholder="목표를 입력하세요..."
-            className="flex-1 rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-indigo-400 transition bg-white shadow-sm"
+            className="min-w-0 flex-1 rounded-xl border border-gray-200 px-3.5 py-3 text-sm text-gray-900 placeholder:text-gray-400 bg-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition shadow-sm"
           />
           <button
             onClick={addGoal}
             disabled={submitting}
-            className="px-5 py-3 bg-indigo-500 text-white rounded-xl text-sm font-semibold hover:bg-indigo-600 disabled:opacity-50 transition shadow-sm"
+            className="flex-shrink-0 px-4 sm:px-5 py-3 bg-indigo-500 text-white rounded-xl text-sm font-semibold hover:bg-indigo-600 active:scale-95 disabled:opacity-50 transition shadow-sm whitespace-nowrap"
           >
             {submitting ? '추가 중...' : '추가'}
           </button>
         </div>
 
         {/* 목표 리스트 */}
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2.5">
           {loading && (
-            <div className="text-center py-16 text-gray-300">
+            <div className="text-center py-16 text-gray-400">
               <div className="text-4xl mb-3 animate-pulse">⏳</div>
               <p className="text-sm">불러오는 중...</p>
             </div>
           )}
           {!loading && goals.length === 0 && (
-            <div className="text-center py-16 text-gray-300">
+            <div className="text-center py-16 text-gray-400">
               <div className="text-5xl mb-3">🎯</div>
-              <p className="text-sm">아직 목표가 없어요. 첫 목표를 추가해봐요!</p>
+              <p className="text-sm font-medium">아직 목표가 없어요.</p>
+              <p className="text-xs text-gray-400 mt-1">첫 번째 목표를 추가해보세요!</p>
             </div>
           )}
           {goals.map((goal) => (
             <div
               key={goal.id}
-              className={`flex items-center gap-3 bg-white rounded-2xl px-4 py-3 shadow-sm border transition ${
-                goal.done ? 'border-green-100 opacity-60' : 'border-gray-100'
+              className={`flex items-center gap-3 bg-white rounded-2xl px-4 py-3.5 shadow-sm border transition w-full overflow-hidden ${
+                goal.done ? 'border-green-100 bg-green-50/20 opacity-70' : 'border-gray-100'
               }`}
             >
               <button
                 onClick={() => toggleGoal(goal.id, goal.done)}
                 className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition ${
-                  goal.done ? 'bg-green-400 border-green-400 text-white' : 'border-gray-300'
+                  goal.done ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 hover:border-indigo-400'
                 }`}
               >
-                {goal.done && '✓'}
+                {goal.done && <span className="text-xs font-bold">✓</span>}
               </button>
-              <span className={`flex-1 text-sm text-gray-700 ${goal.done ? 'line-through text-gray-400' : ''}`}>
+              <span className={`min-w-0 flex-1 text-sm break-words ${goal.done ? 'line-through text-gray-400' : 'text-gray-900 font-medium'}`}>
                 {goal.text}
               </span>
               <button
                 onClick={() => deleteGoal(goal.id)}
-                className="text-gray-200 hover:text-red-400 transition text-lg"
+                className="text-gray-300 hover:text-red-500 transition text-lg flex-shrink-0 p-1"
+                title="삭제"
               >
                 ×
               </button>
@@ -178,9 +187,9 @@ export default function GoalsPage() {
         {doneCount > 0 && (
           <button
             onClick={clearDone}
-            className="mt-4 w-full text-sm text-gray-400 hover:text-red-400 transition py-2"
+            className="mt-5 w-full text-xs text-gray-400 hover:text-red-500 transition py-2"
           >
-            완료된 목표 삭제 ({doneCount}개)
+            완료된 목표 일괄 삭제 ({doneCount}개)
           </button>
         )}
       </div>

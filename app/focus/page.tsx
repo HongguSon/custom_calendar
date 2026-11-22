@@ -59,15 +59,15 @@ export default function FocusPage() {
   const circumference = 2 * Math.PI * 90
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-6">
-      <div className="max-w-lg mx-auto">
+    <main className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-4 sm:p-6 text-gray-900">
+      <div className="max-w-lg mx-auto w-full">
 
         {/* 헤더 */}
-        <div className="flex items-center gap-3 mb-8">
-          <Link href="/" className="text-gray-400 hover:text-gray-600 transition text-2xl">←</Link>
+        <div className="flex items-center gap-3 mb-6 sm:mb-8">
+          <Link href="/" className="text-gray-400 hover:text-gray-700 transition text-2xl p-1">←</Link>
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">⏱️ 집중 모드</h1>
-            <p className="text-sm text-gray-400">25분 집중, 5분 휴식</p>
+            <h1 className="text-2xl font-bold text-gray-900">⏱️ 집중 모드</h1>
+            <p className="text-xs sm:text-sm text-gray-500">25분 집중, 5분 휴식</p>
           </div>
         </div>
 
