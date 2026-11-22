@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 
 export default function Home() {
   const [message, setMessage] = useState('')
@@ -90,21 +91,21 @@ export default function Home() {
 
         {/* 카드 3개 */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-indigo-100">
+          <Link href="/goals" className="bg-white rounded-2xl p-5 shadow-sm border border-indigo-100 hover:shadow-md hover:-translate-y-1 transition-all cursor-pointer">
             <div className="text-3xl mb-2">🎯</div>
             <p className="font-semibold text-gray-700">목표 설정</p>
             <p className="text-sm text-gray-400 mt-1">오늘의 목표를 정해봐</p>
-          </div>
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-purple-100">
+          </Link>
+          <Link href="/focus" className="bg-white rounded-2xl p-5 shadow-sm border border-purple-100 hover:shadow-md hover:-translate-y-1 transition-all cursor-pointer">
             <div className="text-3xl mb-2">⏱️</div>
             <p className="font-semibold text-gray-700">집중 모드</p>
             <p className="text-sm text-gray-400 mt-1">25분 집중, 5분 휴식</p>
-          </div>
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-pink-100">
+          </Link>
+          <Link href="/achievements" className="bg-white rounded-2xl p-5 shadow-sm border border-pink-100 hover:shadow-md hover:-translate-y-1 transition-all cursor-pointer">
             <div className="text-3xl mb-2">🏆</div>
             <p className="font-semibold text-gray-700">성취 기록</p>
             <p className="text-sm text-gray-400 mt-1">오늘 한 것들을 기록해</p>
-          </div>
+          </Link>
         </div>
 
         {/* 명언 */}
