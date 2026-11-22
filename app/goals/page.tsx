@@ -7,42 +7,56 @@ interface Goal {
   id: string
   text: string
   done: boolean
-  createdAt: string
+  created_at: string
 }
 
 export default function GoalsPage() {
   const [goals, setGoals] = useState<Goal[]>([])
   const [input, setInput] = useState('')
+  const [loading, setLoading] = useState(true)
 
+  // 목표 불러오기
   useEffect(() => {
-    const saved = localStorage.getItem('goals')
-    if (saved) setGoals(JSON.parse(saved))
+    fetch('/api/goals')
+      .then((r) => r.json())
+      .then((data) => { setGoals(data); setLoading(false) })
   }, [])
 
-  const save = (updated: Goal[]) => {
-    setGoals(updated)
-    localStorage.setItem('goals', JSON.stringify(updated))
-  }
-
-  const addGoal = () => {
+  // 목표 추가
+  const addGoal = async () => {
     if (!input.trim()) return
-    const newGoal: Goal = {
-      id: Date.now().toString(),
-      text: input.trim(),
-      done: false,
-      createdAt: new Date().toLocaleDateString('ko-KR'),
-    }
-    save([newGoal, ...goals])
+    const res = await fetch('/api/goals', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: input.trim() }),
+    })
+    const newGoal = await res.json()
+    setGoals((prev) => [newGoal, ...prev])
     setInput('')
   }
 
-  const toggleGoal = (id: string) =>
-    save(goals.map((g) => (g.id === id ? { ...g, done: !g.done } : g)))
+  // 완료 토글
+  const toggleGoal = async (id: string, done: boolean) => {
+    setGoals((prev) => prev.map((g) => (g.id === id ? { ...g, done: !done } : g)))
+    await fetch(`/api/goals/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ done: !done }),
+    })
+  }
 
-  const deleteGoal = (id: string) =>
-    save(goals.filter((g) => g.id !== id))
+  // 단일 삭제
+  const deleteGoal = async (id: string) => {
+    setGoals((prev) => prev.filter((g) => g.id !== id))
+    await fetch(`/api/goals/${id}`, { method: 'DELETE' })
+  }
 
-  const clearDone = () => save(goals.filter((g) => !g.done))
+  // 완료 항목 일괄 삭제
+  const clearDone = async () => {
+    const doneIds = goals.filter((g) => g.done).map((g) => g.id)
+    setGoals((prev) => prev.filter((g) => !g.done))
+    await Promise.all(doneIds.map((id) => fetch(`/api/goals/${id}`, { method: 'DELETE' })))
+  }
 
   const doneCount = goals.filter((g) => g.done).length
 
@@ -69,7 +83,7 @@ export default function GoalsPage() {
             <div className="w-full bg-gray-100 rounded-full h-2">
               <div
                 className="bg-gradient-to-r from-indigo-400 to-purple-400 h-2 rounded-full transition-all duration-500"
-                style={{ width: goals.length ? `${(doneCount / goals.length) * 100}%` : '0%' }}
+                style={{ width: `${(doneCount / goals.length) * 100}%` }}
               />
             </div>
           </div>
@@ -95,7 +109,13 @@ export default function GoalsPage() {
 
         {/* 목표 리스트 */}
         <div className="flex flex-col gap-2">
-          {goals.length === 0 && (
+          {loading && (
+            <div className="text-center py-16 text-gray-300">
+              <div className="text-4xl mb-3 animate-pulse">⏳</div>
+              <p className="text-sm">불러오는 중...</p>
+            </div>
+          )}
+          {!loading && goals.length === 0 && (
             <div className="text-center py-16 text-gray-300">
               <div className="text-5xl mb-3">🎯</div>
               <p className="text-sm">아직 목표가 없어요. 첫 목표를 추가해봐요!</p>
@@ -109,7 +129,7 @@ export default function GoalsPage() {
               }`}
             >
               <button
-                onClick={() => toggleGoal(goal.id)}
+                onClick={() => toggleGoal(goal.id, goal.done)}
                 className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition ${
                   goal.done ? 'bg-green-400 border-green-400 text-white' : 'border-gray-300'
                 }`}
@@ -129,7 +149,6 @@ export default function GoalsPage() {
           ))}
         </div>
 
-        {/* 완료 항목 삭제 */}
         {doneCount > 0 && (
           <button
             onClick={clearDone}

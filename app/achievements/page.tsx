@@ -7,7 +7,7 @@ interface Achievement {
   id: string
   text: string
   emoji: string
-  createdAt: string
+  created_at: string
 }
 
 const EMOJIS = ['🏆', '⭐', '🎉', '💪', '🔥', '✅', '📖', '🧠']
@@ -16,33 +16,38 @@ export default function AchievementsPage() {
   const [achievements, setAchievements] = useState<Achievement[]>([])
   const [input, setInput] = useState('')
   const [selectedEmoji, setSelectedEmoji] = useState('🏆')
+  const [loading, setLoading] = useState(true)
 
+  // 성취 불러오기
   useEffect(() => {
-    const saved = localStorage.getItem('achievements')
-    if (saved) setAchievements(JSON.parse(saved))
+    fetch('/api/achievements')
+      .then((r) => r.json())
+      .then((data) => { setAchievements(data); setLoading(false) })
   }, [])
 
-  const save = (updated: Achievement[]) => {
-    setAchievements(updated)
-    localStorage.setItem('achievements', JSON.stringify(updated))
-  }
-
-  const addAchievement = () => {
+  // 성취 추가
+  const addAchievement = async () => {
     if (!input.trim()) return
-    const newItem: Achievement = {
-      id: Date.now().toString(),
-      text: input.trim(),
-      emoji: selectedEmoji,
-      createdAt: new Date().toLocaleString('ko-KR', {
-        month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
-      }),
-    }
-    save([newItem, ...achievements])
+    const res = await fetch('/api/achievements', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: input.trim(), emoji: selectedEmoji }),
+    })
+    const newItem = await res.json()
+    setAchievements((prev) => [newItem, ...prev])
     setInput('')
   }
 
-  const deleteAchievement = (id: string) =>
-    save(achievements.filter((a) => a.id !== id))
+  // 삭제
+  const deleteAchievement = async (id: string) => {
+    setAchievements((prev) => prev.filter((a) => a.id !== id))
+    await fetch(`/api/achievements/${id}`, { method: 'DELETE' })
+  }
+
+  const formatDate = (dateStr: string) =>
+    new Date(dateStr).toLocaleString('ko-KR', {
+      month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
+    })
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-6">
@@ -99,7 +104,13 @@ export default function AchievementsPage() {
 
         {/* 기록 리스트 */}
         <div className="flex flex-col gap-3">
-          {achievements.length === 0 && (
+          {loading && (
+            <div className="text-center py-16 text-gray-300">
+              <div className="text-4xl mb-3 animate-pulse">⏳</div>
+              <p className="text-sm">불러오는 중...</p>
+            </div>
+          )}
+          {!loading && achievements.length === 0 && (
             <div className="text-center py-16 text-gray-300">
               <div className="text-5xl mb-3">🏆</div>
               <p className="text-sm">아직 기록이 없어요. 오늘 한 것을 기록해봐요!</p>
@@ -113,7 +124,7 @@ export default function AchievementsPage() {
               <span className="text-2xl flex-shrink-0">{item.emoji}</span>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-700">{item.text}</p>
-                <p className="text-xs text-gray-400 mt-1">{item.createdAt}</p>
+                <p className="text-xs text-gray-400 mt-1">{formatDate(item.created_at)}</p>
               </div>
               <button
                 onClick={() => deleteAchievement(item.id)}
