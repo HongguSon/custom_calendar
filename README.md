@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# my-webapp
 
-## Getting Started
+Next.js + TypeScript + Tailwind CSS 기반 웹앱.  
+Vercel 무료 티어로 배포 → `xxx.vercel.app` 주소 자동 발급.
 
-First, run the development server:
+## 🚀 로컬 개발
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# → http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 📦 배포 (최초 1회 세팅)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 1. GitHub 레포 생성 & Push
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# GitHub에서 새 레포 생성 후 (예: my-webapp)
+git remote add origin https://github.com/<your-username>/my-webapp.git
+git branch -M main
+git push -u origin main
+```
 
-## Learn More
+### 2. Vercel 연동
 
-To learn more about Next.js, take a look at the following resources:
+1. [vercel.com](https://vercel.com) → 로그인 (GitHub 계정 사용)
+2. **"Add New Project"** → GitHub 레포 선택
+3. 설정 그대로 두고 **"Deploy"** 클릭
+4. 완료! → `https://my-webapp-xxx.vercel.app` 주소 발급
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 3. 이후 배포 (자동)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+git add .
+git commit -m "feat: 변경사항"
+git push
+# → Vercel이 자동으로 감지해서 재배포
+```
 
-## Deploy on Vercel
+## ⚙️ CI/CD 파이프라인
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| 트리거 | 동작 |
+|--------|------|
+| `push` to `main` | Lint + Build 자동 실행 |
+| Pull Request | Lint + Build 체크 + Vercel Preview URL 생성 |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🗂️ 프로젝트 구조
+
+```
+my-webapp/
+├── app/
+│   ├── layout.tsx     # 루트 레이아웃
+│   ├── page.tsx       # 메인 페이지
+│   └── globals.css    # 글로벌 스타일
+├── public/            # 정적 파일
+├── .github/
+│   └── workflows/
+│       └── ci.yml     # GitHub Actions CI
+└── next.config.ts
+```
